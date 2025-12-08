@@ -1,0 +1,20 @@
+properties:
+  replicatedLicenseId:
+    type: string
+    default: ''
+
+  gitguardian.onPrem.adminUser.email:
+    type: string
+    default: "hellotest@gitguardian.com"
+
+  gitguardian.postgresql.host:
+    type: string
+    default: "postgresql"
+
+  gitguardian.postgresql.password:
+    type: string
+    default: "mypassword"
+
+  gitguardian.redis.main.host:
+    type: string
+    default: "redis"

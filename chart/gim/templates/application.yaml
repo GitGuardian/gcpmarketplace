@@ -1,0 +1,103 @@
+apiVersion: app.k8s.io/v1beta1
+kind: Application
+metadata:
+  name: '{{ .Release.Name }}'
+  namespace: '{{ .Release.Namespace }}'
+  labels:
+    app.kubernetes.io/name: '{{ .Release.Name }}'
+    app.kubernetes.io/version: '{{ .Chart.Version }}'
+    app.kubernetes.io/managed-by: '{{ .Release.Service }}'
+    helm.sh/chart: '{{ .Chart.Name }}-{{ .Chart.Version }}'
+  annotations:
+    marketplace.cloud.google.com/deploy-info: '{"partner_id": "nyQmuGEAbf", "product_id": "GitGuardian", "partner_name": "GitGuardian"}'
+spec:
+  descriptor:
+    type: GitGuardian
+    version: '{{ .Chart.Version }}'
+    description: GitGuardian Self-hosted Internal Monitoring
+    maintainers:
+      - name: GitGuardian Self-hosted Team
+        email: enterprise@gitguardian.com
+    links:
+      - description: GitGuardian Documentation
+        url: https://docs.gitguardian.com/
+    keywords:
+      - gitguardian
+      - security
+      - secrets-detection
+      - code-security
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: '{{ .Release.Name }}'
+  addOwnerRef: true
+  componentKinds:
+    # Core Kubernetes Resources
+    - group: ''
+      kind: ServiceAccount
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: Secret
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: PersistentVolumeClaim
+    # Workload Resources
+    - group: apps
+      kind: Deployment
+    # Batch Resources
+    - group: batch
+      kind: Job
+    - group: batch
+      kind: CronJob
+    # RBAC Resources
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+    # Autoscaling Resources
+    - group: autoscaling
+      kind: HorizontalPodAutoscaler
+    - group: policy
+      kind: PodDisruptionBudget
+    # # KEDA Resources
+    # - group: keda.sh
+    #   kind: ScaledObject
+    # Networking Resources
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    # Istio Resources
+    # - group: networking.istio.io
+    #   kind: Gateway
+    # - group: networking.istio.io
+    #   kind: VirtualService
+    # # Contour Resources
+    # - group: projectcontour.io
+    #   kind: HTTPProxy
+    # # Traefik Resources
+    # - group: traefik.containo.us
+    #   kind: Middleware
+    # # OpenShift Resources
+    # - group: route.openshift.io
+    #   kind: Route
+    # # Cert-Manager Resources
+    # - group: cert-manager.io
+    #   kind: Certificate
+    # # External Secrets Resources
+    # - group: external-secrets.io
+    #   kind: ExternalSecret
+    # Monitoring Resources
+    # - group: monitoring.coreos.com
+    #   kind: ServiceMonitor
+  info:
+    - name: GitGuardian Application
+      type: Reference
+      value: 'https://{{ .Values.hostname }}'
+    - name: Release Name
+      value: '{{ .Release.Name }}'
+    - name: Release Namespace
+      value: '{{ .Release.Namespace }}'
+    - name: Chart Version
+      value: '{{ .Chart.Version }}'

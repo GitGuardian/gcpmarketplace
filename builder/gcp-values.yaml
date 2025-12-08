@@ -1,0 +1,45 @@
+serviceAccount:
+  create: false
+  name: gim # Will be overridden by marketplace
+
+# Migration jobs ServiceAccount and settings
+migration:
+  hookMethod: 'none'
+  serviceAccount:
+    create: false
+    name: gim-migration
+  postDeploy:
+    backOffLimit: 5
+    ttlSecondsAfterFinished: 3600 # 1h to remove errors
+  upgradePathCheck:
+    enabled: false
+
+# Loki subchart ServiceAccount
+loki:
+  serviceAccount:
+    create: false
+
+# Loki-minio subchart ServiceAccount
+loki-minio:
+  serviceAccount:
+    create: false
+
+rbac:
+  enabled: false
+
+onPrem:
+  replicatedRbac:
+    enabled: false
+
+ingress:
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+
+front:
+  service:
+    type: "NodePort"
+    port: 80
+    nodePort: 30880
+    annotations:
+      cloud.google.com/neg: '{"ingress": false}'
+      cloud.google.com/backend-config: '{"default": "gim-backend-config"}'

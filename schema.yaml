@@ -1,0 +1,328 @@
+x-google-marketplace:
+  schemaVersion: v2
+  applicationApiVersion: v1beta1
+  publishedVersion: '2025.12.0'
+  publishedVersionMetadata:
+    releaseNote: GitGuardian Internal Monitoring - Self-hosted secrets detection and code security platform
+    releaseTypes:
+      - Feature
+    recommended: true
+  images:
+    '':
+      properties:
+        image.registry:
+          type: REGISTRY
+
+form:
+  - widget: help
+    description: Configure GitGuardian. Prerequisites - PostgreSQL (Cloud SQL), Redis (Memorystore), and Replicated license YAML file
+
+properties:
+  replicatedLicenseId:
+    type: string
+    title: GitGuardian licenseID
+    description: GitGuardian licenseID
+
+  name:
+    type: string
+    title: Application instance name
+    description: Name of the GitGuardian application instance
+    x-google-marketplace:
+      type: NAME
+
+  namespace:
+    type: string
+    title: Namespace
+    description: Kubernetes namespace where GitGuardian will be deployed
+    x-google-marketplace:
+      type: NAMESPACE
+
+  storageClass:
+    type: string
+    title: Storage Class
+    description: Storage class for persistent volumes (if needed)
+    x-google-marketplace:
+      type: STORAGE_CLASS
+      storageClass:
+        type: SSD
+
+  gitguardian.hostname:
+    type: string
+    title: Application Hostname
+    description: Hostname for accessing GitGuardian (without https://, e.g., gitguardian.example.com)
+    default: gitguardian.example.com
+    pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+
+  gitguardian.onPrem.adminUser.email:
+    type: string
+    title: Admin Email
+    description: Email address for the initial admin user
+    pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+  gitguardian.onPrem.adminUser.password:
+    type: string
+    title: Admin Password
+    description: Password for the initial admin user (minimum 12 characters)
+    x-google-marketplace:
+      type: GENERATED_PASSWORD
+      generatedPassword:
+        length: 20
+        includeSymbols: true
+        base64: false
+
+  gitguardian.onPrem.adminUser.firstname:
+    type: string
+    title: Admin First Name
+    description: First name of the initial admin user
+    default: Admin
+
+  gitguardian.postgresql.host:
+    type: string
+    title: PostgreSQL Host
+    description: Hostname or IP address of your PostgreSQL database (e.g., Cloud SQL instance)
+
+  gitguardian.postgresql.port:
+    type: integer
+    title: PostgreSQL Port
+    description: Port number for PostgreSQL connection
+    default: 5432
+    minimum: 1
+    maximum: 65535
+
+  gitguardian.postgresql.username:
+    type: string
+    title: PostgreSQL Username
+    description: Username for PostgreSQL database connection
+    default: gitguardian
+
+  gitguardian.postgresql.password:
+    type: string
+    title: PostgreSQL Password
+    description: Password for PostgreSQL database connection
+
+  gitguardian.postgresql.database:
+    type: string
+    title: PostgreSQL Database Name
+    description: Name of the PostgreSQL database
+    default: gitguardian
+
+  gitguardian.postgresql.tls.mode:
+    type: string
+    title: PostgreSQL SSL Mode
+    description: SSL/TLS mode for PostgreSQL connection
+    default: require
+    enum:
+      - disable
+      - allow
+      - prefer
+      - require
+      - verify-ca
+      - verify-full
+
+  gitguardian.redis.main.host:
+    type: string
+    title: Redis Host
+    description: Hostname or IP address of your Redis instance (e.g., Memorystore)
+
+  gitguardian.redis.main.port:
+    type: integer
+    title: Redis Port
+    description: Port number for Redis connection
+    default: 6379
+    minimum: 1
+    maximum: 65535
+
+  gitguardian.redis.main.password:
+    type: string
+    title: Redis Password
+    description: Password for Redis connection (leave empty if no authentication)
+    default: ''
+
+  gitguardian.redis.main.user:
+    type: string
+    title: Redis Username
+    description: Username for Redis connection (optional, for Redis 6+)
+    default: ''
+
+  gitguardian.ingress.enabled:
+    type: boolean
+    title: Enable Ingress
+    description: Enable Kubernetes Ingress for external access
+    default: true
+
+  gitguardian.ingress.tls.enabled:
+    type: boolean
+    title: Enable TLS/HTTPS
+    description: Enable TLS/HTTPS for Ingress
+    default: false
+
+  gitguardian.ingress.tls.existingSecret:
+    type: string
+    title: Existing Secret name for Ingress TLS
+    description: the Secret must exist in the namespace prior to deployment
+    default: ''
+
+  gitguardian.miscEncryption.djangoSecretKey:
+    type: string
+    title: Django Secret (only for updates)
+    description: Mandatory for updates
+    default: ''
+
+  gitguardian.front.nginx.replicas:
+    type: integer
+    title: Frontend Replicas
+    description: Number of frontend/nginx replicas
+    default: 2
+    minimum: 1
+    maximum: 10
+
+  gitguardian.webapps.hook.replicas:
+    type: integer
+    title: Webhook Handler Replicas
+    description: Number of webhook handler replicas
+    default: 2
+    minimum: 1
+    maximum: 10
+
+  gitguardian.webapps.internal_api.replicas:
+    type: integer
+    title: Internal API Replicas
+    description: Number of internal API replicas
+    default: 2
+    minimum: 1
+    maximum: 10
+
+  gitguardian.webapps.public_api.replicas:
+    type: integer
+    title: Public API Replicas
+    description: Number of public API replicas
+    default: 2
+    minimum: 1
+    maximum: 10
+
+  gitguardian.celeryWorkers.worker.replicas:
+    type: integer
+    title: Worker Replicas
+    description: Number of Celery worker replicas
+    default: 2
+    minimum: 1
+    maximum: 20
+
+  gitguardian.celeryWorkers.scanners.replicas:
+    type: integer
+    title: Scanner Replicas
+    description: Number of scanner worker replicas
+    default: 2
+    minimum: 1
+    maximum: 20
+
+  gitguardian.observability.exporters.statefulAppExporter.enabled:
+    type: boolean
+    title: Enable Prometheus Exporter
+    description: Enable Prometheus metrics exporters for monitoring
+    default: false
+
+  gitguardian.observability.serviceMonitors.enabled:
+    type: boolean
+    title: Enable Service Monitors
+    description: Enable Prometheus ServiceMonitor resources
+    default: false
+
+  gitguardian.logCollector.enabled:
+    type: boolean
+    title: Enable Log Collector
+    description: Enable integrated log collection with Loki
+    default: false
+
+  gitguardian.securityContext.enabled:
+    type: boolean
+    title: Enable Security Context
+    description: Enable Pod Security Context (disable for OpenShift)
+    default: true
+
+  gitguardian.serviceAccount.name:
+    type: string
+    title: Service Account Name
+    description: Kubernetes ServiceAccount for GitGuardian pods (managed by GCP Marketplace)
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        description: Service account used by GitGuardian application pods
+        roles:
+          - type: Role
+            rulesType: PREDEFINED
+            rulesFromRoleName: edit
+
+  gitguardian.migration.serviceAccount.name:
+    type: string
+    title: Migration Service Account Name
+    description: Kubernetes ServiceAccount for GitGuardian migration jobs (managed by GCP Marketplace)
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        description: Service account used by GitGuardian migration and deployment jobs
+        roles:
+          - type: Role
+            rulesType: PREDEFINED
+            rulesFromRoleName: edit
+
+  gitguardian.replicated.serviceAccountName:
+    type: string
+    title: Replicated SDK Service Account Name
+    description: Kubernetes ServiceAccount for Replicated SDK (managed by GCP Marketplace)
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        description: Service account used by Replicated SDK for license management
+        roles:
+          - type: Role
+            rulesType: CUSTOM
+            rules:
+              - apiGroups: ['']
+                resources: ['secrets']
+                verbs: ['get', 'create', 'update']
+              - apiGroups: ['']
+                resources: ['configmaps', 'pods']
+                verbs: ['get', 'list', 'watch']
+              - apiGroups: ['apps']
+                resources: ['deployments', 'replicasets', 'statefulsets', 'daemonsets']
+                verbs: ['get', 'list', 'watch']
+              - apiGroups: ['']
+                resources: ['services', 'endpoints', 'persistentvolumeclaims']
+                verbs: ['get', 'list', 'watch']
+              - apiGroups: ['networking.k8s.io']
+                resources: ['ingresses']
+                verbs: ['get', 'list', 'watch']
+
+  serviceAccount.name:
+    type: string
+    title: Service Account Name
+    description: Kubernetes ServiceAccount for GitGuardian pods (managed by GCP Marketplace)
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        description: Service account used by GitGuardian application pods
+        roles:
+          - type: Role
+            rulesType: PREDEFINED
+            rulesFromRoleName: edit
+
+required:
+  - replicatedLicenseId
+  - name
+  - namespace
+  - storageClass
+  - gitguardian.hostname
+  - gitguardian.onPrem.adminUser.email
+  - gitguardian.onPrem.adminUser.password
+  - gitguardian.postgresql.host
+  - gitguardian.postgresql.port
+  - gitguardian.postgresql.username
+  - gitguardian.postgresql.password
+  - gitguardian.postgresql.database
+  - gitguardian.redis.main.host
+  - gitguardian.redis.main.port
+  - serviceAccount.name
+  - gitguardian.serviceAccount.name
+  - gitguardian.migration.serviceAccount.name
+  - gitguardian.replicated.serviceAccountName

@@ -3,7 +3,8 @@ FROM gcr.io/cloud-marketplace-tools/k8s/deployer_helm/onbuild
 
 # Install yq for YAML parsing
 RUN apt-get update && apt-get install -y wget && \
-    wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && \
+    ARCH=$(dpkg --print-architecture) && \
+    wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH} -O /usr/bin/yq && \
     chmod +x /usr/bin/yq
 
 # Copy the chart
@@ -14,8 +15,8 @@ COPY schema.yaml /data/
 COPY builder/test/schema.yaml /data-test/
 
 # Copy custom license processor
-COPY builder/process_license.sh /bin/process_license.sh
-RUN chmod +x /bin/process_license.sh
+COPY builder/prepare-gg-deployment.sh /bin/prepare-gg-deployment.sh
+RUN chmod +x /bin/prepare-gg-deployment.sh
 
 # Copy GCP-specific default values (merged into subchart during deployment)
 COPY builder/gcp-values.yaml /data/gcp-values.yaml

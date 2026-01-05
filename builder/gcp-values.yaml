@@ -2,9 +2,9 @@ serviceAccount:
   create: false
   name: gim # Will be overridden by marketplace
 
+hookMethod: 'none'
 # Migration jobs ServiceAccount and settings
 migration:
-  hookMethod: 'none'
   serviceAccount:
     create: false
     name: gim-migration

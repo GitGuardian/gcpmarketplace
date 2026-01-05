@@ -19,12 +19,10 @@ if [ -f /data/values.yaml ]; then
     CUSTOMER_EMAIL=$(yq eval '.["gitguardian.onPrem.adminUser.email"]' /data/values.yaml 2>&1)
     CHANNEL=$(yq eval '.channel' /data/chart/values.yaml 2>&1)
     # Set VERSION based on CHANNEL
-    if [ "$CHANNEL" = "gcp" ]; then
-        VERSION=">=0.0.0"
-    elif [ "$CHANNEL" = "stable" ]; then
+    if [ "$CHANNEL" = "stable" ]; then
         VERSION=$(yq eval '.version' /data/chart/Chart.yaml 2>&1)
     else
-        VERSION="0.1.9"
+        VERSION=">=0.0.0"
     fi
 else
     echo "ERROR: /data/values.yaml not found"

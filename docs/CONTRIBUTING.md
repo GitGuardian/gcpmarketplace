@@ -1,19 +1,19 @@
-# GCP Marketplace GitGuardian Deployer
+# Contributing / Local Development
 
-Custom deployer for GitGuardian on GCP Marketplace with Replicated license validation.
+This guide is for developers working on the GCP Marketplace deployer itself.
 
-## Local Debugging
-
-### Prerequisites
+## Prerequisites
 
 - Docker
 - Valid Replicated license credentials
 
+## Local Debugging
+
 ### 1. Create a test values file
 
-Create a `test-values.yaml` file with your configuration.
+Create a `test-values.yaml` file at the repository root.
 
-> **⚠️ Required:** You MUST modify these two values with your Replicated credentials:
+> **⚠️ Required:** You MUST replace these two values with your Replicated credentials:
 > - `replicatedLicenseId` - Your Replicated license ID
 > - `gitguardian.onPrem.adminUser.email` - The email associated with your Replicated license (used for registry authentication)
 
@@ -70,7 +70,7 @@ docker build -t gg-deployer .
 
 ### 3. Run the container interactively
 
-Mount the test values file and start a bash shell:
+Mount your test values file and start a bash shell:
 
 ```bash
 docker run -it --rm \
@@ -79,6 +79,8 @@ docker run -it --rm \
   gg-deployer \
   bash
 ```
+
+> **Note:** The file is mounted to `/data/values.yaml` which is where GCP Marketplace stores deployment parameters.
 
 ### 4. Inside the container
 
@@ -95,15 +97,15 @@ ls -la /data/chart/
 source /bin/prepare-gg-deployment.sh
 ```
 
-### Key Files
+## Key Files
 
 | File | Location in container | Description |
 |------|----------------------|-------------|
 | `prepare-gg-deployment.sh` | `/bin/prepare-gg-deployment.sh` | Main preparation script (license validation, subchart download, values merge) |
 | `deployer-wrapper.sh` | `/bin/deploy.sh` | Entry point wrapper that calls preparation then original deployer |
-| `gcp-values.yaml` | `/data/gcp-values.yaml` | GCP-specific default values merged into gg subchart |
+| `gcp-values.yaml` | `/data/gcp-values.yaml` | GCP-specific default values merged into subchart |
 
-### Debugging Tips
+## Debugging Tips
 
 1. **Check yq is working:**
    ```bash
@@ -123,21 +125,21 @@ source /bin/prepare-gg-deployment.sh
    # After running prepare-gg-deployment.sh
    ls -la /data/chart/charts/
    cd /data/chart/charts/
-   tar -tzf gitguardian-x.x.x.tar.gz
+   tar -xzf gitguardian-*.tgz
    cd gitguardian
-   cat values.yaml | grep -4 serviceAccount #see the create is set to false as per gcp-values.yaml and not chart default
+   cat values.yaml | grep -A4 serviceAccount  # see the create is set to false as per gcp-values.yaml
    ```
 
-## Architecture
+## Deployer Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    GCP Marketplace                          │
 │                         │                                   │
 │                         ▼                                   │
-│              ┌──────────────────┐                           │
-│              │   deploy.sh      │ (gg deployer-wrapper.sh)  │
-│              └──────────────────┘                           │
+│              ┌──────────────────────┐                       │
+│              │   deploy.sh          │ (deployer-wrapper.sh) │
+│              └──────────────────────┘                       │
 │                         │                                   │
 │                         ▼                                   │
 │    ┌─────────────────────────────────────────────────┐     │

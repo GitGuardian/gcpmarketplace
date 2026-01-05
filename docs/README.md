@@ -273,6 +273,10 @@ Verify your license ID is correct and active. Contact [support@gitguardian.com](
 - 💬 [GitGuardian Support](mailto:support@gitguardian.com)
 - 🐛 [Report Issues](https://github.com/GitGuardian/gcpmarketplace/issues)
 
+## Contributing
+
+For local development and debugging of the deployer, see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Support
 
 For support inquiries:

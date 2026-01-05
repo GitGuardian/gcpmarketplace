@@ -18,7 +18,12 @@ if [ -f /data/values.yaml ]; then
     LICENSE_ID=$(yq eval '.replicatedLicenseId' /data/values.yaml 2>&1)
     CUSTOMER_EMAIL=$(yq eval '.["gitguardian.onPrem.adminUser.email"]' /data/values.yaml 2>&1)
     CHANNEL=$(yq eval '.channel' /data/chart/values.yaml 2>&1)
-    VERSION=$(yq eval '.version' /data/chart/Chart.yaml 2>&1)
+    # Set VERSION based on CHANNEL
+    if [ "$CHANNEL" = "stable" ]; then
+        VERSION=$(yq eval '.version' /data/chart/Chart.yaml 2>&1)
+    else
+        VERSION=">=0.0.0"
+    fi
 else
     echo "ERROR: /data/values.yaml not found"
 fi
@@ -67,7 +72,7 @@ else
 
         # Include the subchart
         echo "Adding gitguardian subchart dependency..."
-        yq -i '.dependencies = (.dependencies // []) | .dependencies += [{"name": "gitguardian", "version": "0.1.9", "repository": "oci://registry.replicated.com/gitguardian/'"$CHANNEL"'"}]' /data/chart/Chart.yaml
+        yq -i '.dependencies = (.dependencies // []) | .dependencies += [{"name": "gitguardian", "version": "'"$VERSION"'", "repository": "oci://registry.replicated.com/gitguardian/'"$CHANNEL"'"}]' /data/chart/Chart.yaml
 
         # Verify the Chart.yaml was modified correctly
         if ! yq e '.dependencies[] | select(.name == "gitguardian")' /data/chart/Chart.yaml > /dev/null 2>&1; then

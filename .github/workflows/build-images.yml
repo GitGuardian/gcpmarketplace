@@ -1,0 +1,145 @@
+name: Build and Push GCP Marketplace Images
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., 2026.1.0)'
+        required: true
+        type: string
+      channel:
+        description: 'Release channel'
+        required: true
+        type: string
+        default: 'Stable'
+
+env:
+  REGISTRY: gcr.io
+  PROJECT_ID: gitguardian-public
+  REPOSITORY: gitguardian-wrapper
+  GCP_MARKETPLACE_SERVICE: services/gitguardian.endpoints.gitguardian-public.cloud.goog
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine version and channel
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For PRs, use a test version and don't push
+            VERSION="pr-${{ github.event.pull_request.number }}"
+            CHANNEL="Test"
+            PUSH="false"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+            CHANNEL="${{ inputs.channel }}"
+            PUSH="true"
+          else
+            # Extract version from tag (e.g., 2026.1.0)
+            VERSION="${GITHUB_REF#refs/tags/}"
+            CHANNEL="Stable"
+            PUSH="true"
+          fi
+
+          # Extract major.minor from version (e.g., 2026.1.0 -> 2026.1)
+          MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major_minor=$MAJOR_MINOR" >> $GITHUB_OUTPUT
+          echo "channel=$CHANNEL" >> $GITHUB_OUTPUT
+          echo "push=$PUSH" >> $GITHUB_OUTPUT
+
+          echo "Building version: $VERSION"
+          echo "Major.Minor: $MAJOR_MINOR"
+          echo "Channel: $CHANNEL"
+          echo "Push to registry: $PUSH"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use gcloud as credential helper
+        run: |
+          gcloud auth configure-docker gcr.io
+
+      - name: Build and push deployer image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ steps.version.outputs.push == 'true' }}
+          load: ${{ steps.version.outputs.push == 'false' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.major_minor }}
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:latest
+          platforms: ${{ steps.version.outputs.push == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          annotations: |
+            com.googleapis.cloudmarketplace.product.service.name=${{ env.GCP_MARKETPLACE_SERVICE }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Tag wrapper image with new version
+        if: steps.version.outputs.push == 'true'
+        run: |
+          # The wrapper image is always the same (FROM scratch)
+          # Tag the existing 'latest' image with the new version tags (preserves annotations)
+          docker buildx imagetools create \
+            --annotation "com.googleapis.cloudmarketplace.product.service.name=${{ env.GCP_MARKETPLACE_SERVICE }}" \
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:latest \
+            --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ steps.version.outputs.version }} \
+            --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ steps.version.outputs.major_minor }}
+
+      - name: Output image URIs (Push)
+        if: steps.version.outputs.push == 'true'
+        run: |
+          echo "✅ Images built and pushed successfully!"
+          echo ""
+          echo "📦 Channel: ${{ steps.version.outputs.channel }}"
+          echo "🏗️  Architectures: linux/amd64, linux/arm64"
+          echo ""
+          echo "🚀 Deployer image (built):"
+          echo "  • ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.version }}"
+          echo "  • ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.major_minor }}"
+          echo "  • ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:latest"
+          echo ""
+          echo "🏷️  Wrapper image (tagged from latest):"
+          echo "  • ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ steps.version.outputs.version }}"
+          echo "  • ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ steps.version.outputs.major_minor }}"
+          echo "  • ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:latest"
+
+      - name: Output build status (PR)
+        if: steps.version.outputs.push == 'false'
+        run: |
+          echo "✅ Deployer image built successfully (not pushed - PR validation only)"
+          echo ""
+          echo "📦 Channel: ${{ steps.version.outputs.channel }}"
+          echo "🏗️  Architecture: linux/amd64 (single arch for local validation)"
+          echo ""
+          echo "🔨 Deployer image: Built locally for validation"
+          echo "⏭️  Wrapper image: Skipped (FROM scratch - nothing to validate)"
+          echo ""
+          echo "ℹ️  Deployer image loaded locally for validation but not pushed to registry."
+          echo "ℹ️  Multi-arch (amd64+arm64) builds only happen on push/tag."

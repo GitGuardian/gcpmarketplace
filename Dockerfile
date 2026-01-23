@@ -7,8 +7,16 @@ RUN apt-get update && apt-get install -y wget && \
     wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH} -O /usr/bin/yq && \
     chmod +x /usr/bin/yq
 
+# Accept version and channel as build args
+ARG VERSION=0.0.0
+ARG CHANNEL=stable
+
 # Copy the chart
 COPY chart/gim /data/chart
+
+# Update version in Chart.yaml and channel in values.yaml
+RUN yq eval ".version = \"${VERSION}\"" -i /data/chart/Chart.yaml && \
+    yq eval ".channel = \"${CHANNEL}\"" -i /data/chart/values.yaml
 
 # Copy the schema
 COPY schema.yaml /data/

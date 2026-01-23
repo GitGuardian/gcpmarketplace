@@ -18,7 +18,7 @@ on:
         description: 'Release channel'
         required: true
         type: string
-        default: 'Stable'
+        default: 'stable'
 
 env:
   REGISTRY: gcr.io
@@ -43,7 +43,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For PRs, use a test version and don't push
             VERSION="pr-${{ github.event.pull_request.number }}"
-            CHANNEL="Test"
+            CHANNEL="test"
             PUSH="false"
           elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ inputs.version }}"
@@ -52,7 +52,7 @@ jobs:
           else
             # Extract version from tag (e.g., 2026.1.0)
             VERSION="${GITHUB_REF#refs/tags/}"
-            CHANNEL="Stable"
+            CHANNEL="stable"
             PUSH="true"
           fi
 
@@ -95,7 +95,10 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.major_minor }}
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:latest
-          platforms: ${{ steps.version.outputs.push == 'true' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          platforms: linux/amd64
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+            CHANNEL=${{ steps.version.outputs.channel }}
           annotations: |
             com.googleapis.cloudmarketplace.product.service.name=${{ env.GCP_MARKETPLACE_SERVICE }}
           cache-from: type=gha
@@ -118,7 +121,7 @@ jobs:
           echo "✅ Images built and pushed successfully!"
           echo ""
           echo "📦 Channel: ${{ steps.version.outputs.channel }}"
-          echo "🏗️  Architectures: linux/amd64, linux/arm64"
+          echo "🏗️  Architecture: linux/amd64"
           echo ""
           echo "🚀 Deployer image (built):"
           echo "  • ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.version }}"
@@ -136,10 +139,9 @@ jobs:
           echo "✅ Deployer image built successfully (not pushed - PR validation only)"
           echo ""
           echo "📦 Channel: ${{ steps.version.outputs.channel }}"
-          echo "🏗️  Architecture: linux/amd64 (single arch for local validation)"
+          echo "🏗️  Architecture: linux/amd64"
           echo ""
           echo "🔨 Deployer image: Built locally for validation"
           echo "⏭️  Wrapper image: Skipped (FROM scratch - nothing to validate)"
           echo ""
           echo "ℹ️  Deployer image loaded locally for validation but not pushed to registry."
-          echo "ℹ️  Multi-arch (amd64+arm64) builds only happen on push/tag."

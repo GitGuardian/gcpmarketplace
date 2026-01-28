@@ -84,6 +84,23 @@ jobs:
         run: |
           gcloud auth configure-docker gcr.io
 
+      - name: Install yq
+        uses: frenck/action-setup-yq@v1
+
+      - name: Update version in source files
+        run: |
+          # Update version in Chart.yaml, values.yaml, and schema.yaml
+          # This must be done BEFORE docker build because the base image's ONBUILD
+          # triggers package the chart before our Dockerfile commands run
+          yq eval '.version = "${{ steps.version.outputs.version }}"' -i chart/gim/Chart.yaml
+          yq eval '.channel = "${{ steps.version.outputs.channel }}"' -i chart/gim/values.yaml
+          yq eval '.x-google-marketplace.publishedVersion = "${{ steps.version.outputs.version }}"' -i schema.yaml
+
+          echo "Updated versions:"
+          echo "  Chart.yaml version: $(yq eval '.version' chart/gim/Chart.yaml)"
+          echo "  values.yaml channel: $(yq eval '.channel' chart/gim/values.yaml)"
+          echo "  schema.yaml publishedVersion: $(yq eval '.x-google-marketplace.publishedVersion' schema.yaml)"
+
       - name: Build and push deployer image
         uses: docker/build-push-action@v5
         with:
@@ -96,24 +113,30 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:${{ steps.version.outputs.major_minor }}
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/deployer:latest
           platforms: linux/amd64
-          build-args: |
-            VERSION=${{ steps.version.outputs.version }}
-            CHANNEL=${{ steps.version.outputs.channel }}
           annotations: |
             com.googleapis.cloudmarketplace.product.service.name=${{ env.GCP_MARKETPLACE_SERVICE }}
+          # Disable provenance attestations - GCP Marketplace doesn't support OCI image index format
+          provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Install crane
+        if: steps.version.outputs.push == 'true'
+        uses: imjasonh/setup-crane@v0.4
 
       - name: Tag wrapper image with new version
         if: steps.version.outputs.push == 'true'
         run: |
           # The wrapper image is always the same (FROM scratch)
-          # Tag the existing 'latest' image with the new version tags (preserves annotations)
-          docker buildx imagetools create \
-            --annotation "com.googleapis.cloudmarketplace.product.service.name=${{ env.GCP_MARKETPLACE_SERVICE }}" \
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:latest \
-            --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ steps.version.outputs.version }} \
-            --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${{ steps.version.outputs.major_minor }}
+          # Copy from latest and add GCP Marketplace annotation
+          for TAG in "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.major_minor }}"; do
+            crane copy \
+              "${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:latest" \
+              "${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${TAG}"
+            crane mutate \
+              "${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}:${TAG}" \
+              --annotation "com.googleapis.cloudmarketplace.product.service.name=${{ env.GCP_MARKETPLACE_SERVICE }}"
+          done
 
       - name: Output image URIs (Push)
         if: steps.version.outputs.push == 'true'

@@ -20,6 +20,11 @@ fullnameOverride: ''
 serviceAccount:
   name: ''
 
+# Google Marketplace consumption-tracking label (Producer Portal > Overview).
+# Keep in sync with global.podLabels in builder/gcp-values.yaml.
+podLabels:
+  goog-partner-solution: isol_plb32_001kf00001cricgiat_xwj46fqts77puudzv6coaytpjyvuibzt
+
 podSecurityContext:
   {}
   # fsGroup: 2000

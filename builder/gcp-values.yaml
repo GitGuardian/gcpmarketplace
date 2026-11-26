@@ -49,7 +49,7 @@ rbac:
 
 onPrem:
   replicatedRbac:
-    enabled: false
+    mode: disabled
 
 ingress:
   annotations:

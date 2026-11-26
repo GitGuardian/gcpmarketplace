@@ -13,6 +13,9 @@ spec:
     metadata:
       labels:
         {{- include "gitguardian.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:

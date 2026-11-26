@@ -26,7 +26,7 @@ rbac:
 
 onPrem:
   replicatedRbac:
-    enabled: false
+    mode: disabled
   adminUser:
     email: REPLACE_ME
     firstname: REPLACE_ME

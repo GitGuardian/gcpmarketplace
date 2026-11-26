@@ -1,13 +1,15 @@
 # Google Marketplace consumption-tracking label, applied on every Pod template.
 # Value: "Consumption tracking label" from Producer Portal > Overview.
 # Keep in sync with podLabels in chart/gim/values.yaml.
-# global.podLabels is merged into the pod labels of all GIM workloads, but not
-# of the subcharts below, which need their own podLabels key.
+# global.podLabels is merged into the pod labels of all GIM workloads and
+# loki-minio, but not of the Replicated SDK and Loki subcharts below, which
+# need their own podLabels key.
 global:
   podLabels:
     goog-partner-solution: isol_plb32_001kf00001cricgiat_xwj46fqts77puudzv6coaytpjyvuibzt
 
-# Replicated SDK subchart (global.podLabels does not propagate)
+# Replicated SDK subchart (global.podLabels does not propagate in SDK 1.19.x;
+# SDK >= 1.20 reads it with replicated.useGlobalSettings: true)
 replicated:
   podLabels:
     goog-partner-solution: isol_plb32_001kf00001cricgiat_xwj46fqts77puudzv6coaytpjyvuibzt
@@ -32,13 +34,15 @@ migration:
 loki:
   serviceAccount:
     create: false
+  # Loki singleBinary StatefulSet ignores global.podLabels
+  loki:
+    podLabels:
+      goog-partner-solution: isol_plb32_001kf00001cricgiat_xwj46fqts77puudzv6coaytpjyvuibzt
 
 # Loki-minio subchart ServiceAccount
 loki-minio:
   serviceAccount:
     create: false
-  podLabels:
-    goog-partner-solution: isol_plb32_001kf00001cricgiat_xwj46fqts77puudzv6coaytpjyvuibzt
 
 rbac:
   enabled: false
